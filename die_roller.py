@@ -1,10 +1,14 @@
 import board
+import random
+import os
 import digitalio
 #from digitalio import DigitalInOut, Direction, Pull
 from adafruit_funhouse import FunHouse
 import adafruit_bitmap_font
 from adafruit_display_text import label
 from adafruit_display_shapes.rect import Rect
+from adafruit_display_shapes.roundrect import RoundRect
+from adafruit_display_shapes.triangle import Triangle
 from adafruit_display_shapes.circle import Circle
 from adafruit_display_shapes.filled_polygon import FilledPolygon
 #from adafruit_display_shapes.filled_polygon import FilledPolygon
@@ -12,7 +16,7 @@ from adafruit_display_shapes.filled_polygon import FilledPolygon
 import time
 
 funhouse = FunHouse(
-    default_bg=0x0F0F00,
+    default_bg=0x078f86,
     #scale=2, # gives us a 120x120 grid to address based on the 240x240 pixel display
     scale=1 #filled polygons behave strangely at any scale other than 1 - the fill color acts as if scale=1
 )
@@ -40,21 +44,6 @@ def show(shape):
 def hide(shape):
     shape.hidden = True
 
-
-"""
-#TODO: fill these in with real shapes
-def show_6():
-    show_circle()
-def show_8():
-    show_circle()
-def show_10():
-    show_circle()
-def show_12():
-    show_circle()
-def show_20():
-    show_circle()
-"""
-
 #poly1 = FilledPolygon(
 #    points=[(10,80),(20, 70),(30,80),(30,100),(20,110),(10,100)],
 #    outline=0xFFFFFF,
@@ -68,34 +57,26 @@ funhouse.display.root_group = None
 
 myfont = adafruit_bitmap_font.bitmap_font.load_font('fonts/Jellee-Bold-21.bdf')
 
-circle_die = Circle(x0=120,y0=80,r=60,fill=0x0000FF,outline=0xFF0000,stroke=2)
+circle_die = Circle(x0=120,y0=80,r=60,fill=0x1da861,outline=0x0000FF,stroke=2)
 hide(circle_die)
 funhouse.root_group.append(circle_die)
 
-#TODO:  round_rect?
-square_die = Rect(x=60,y=20,width=120,height=120,fill=0x0000FF,outline=0xFF0000,stroke=2)
+triangle_die = Triangle(x0=120,y0=20,x1=50,y1=140,x2=190,y2=140,fill=0x1da861,outline=0x0000FF)
+hide(triangle_die)
+funhouse.root_group.append(triangle_die)
+
+square_die = RoundRect(x=60,y=20,width=120,height=120,fill=0x1da861,outline=0x0000FF,stroke=2,r=15)
 hide(square_die)
 funhouse.root_group.append(square_die)
 
-die_label = label.Label(font=myfont,x=90,y=70,text="0",scale=2)
+hexagon_die = FilledPolygon(points=[(90,20),(150,20),(190,80),(150,140),(90,140),(50,80)],fill=0x1da861,outline=0x0000FF,stroke=2)
+hide(hexagon_die)
+funhouse.root_group.append(hexagon_die)
+
+die_label = label.Label(font=myfont,x=90,y=80,text="0",scale=2)
 funhouse.root_group.append(die_label)
 
 funhouse.display.root_group = funhouse.root_group
-
-
-# button setup
-
-# select next smallest die size (wraps around to largest)
-#up_button = digitalio.DigitalInOut(board.BUTTON_UP)
-#up_button.switch_to_input(pull=digitalio.Pull.DOWN)
-
-#roll the die
-#select_button = digitalio.DigitalInOut(board.BUTTON_SELECT)
-#select_button.switch_to_input(pull=digitalio.Pull.DOWN)
-
-# select next largest die size (wraps around to smallest)
-#down_button = digitalio.DigitalInOut(board.BUTTON_DOWN)
-#down_button.switch_to_input(pull=digitalio.Pull.DOWN)
 
 #general state vars
 die_sizes = [4,6,8,10,12,20,50,100]
@@ -118,13 +99,43 @@ def larger_die():
         die_idx = 0
     refresh_die_display()
 
+def hide_all_dice():
+    hide(square_die)
+    hide(circle_die)
+    hide(triangle_die)
+    hide(hexagon_die)
+
 def refresh_die_display():
     die_size = die_sizes[die_idx]
     die_label.text = f"d{'%' if die_size == 100 else die_size}"
-    show(circle_die)
+    die_label.x = 90
+    hide_all_dice()
+    if die_size == 4:
+        show(triangle_die)
+    elif die_size == 6:
+        show(square_die)
+    elif die_size == 8:
+        show(hexagon_die)
+    else:
+        show(circle_die)
 
-def roll_die():
-    print("not implemented")
+
+def roll(sides):
+    # the docs recommend using os.urandom() for truly random numbers
+    # (https://docs.circuitpython.org/en/latest/shared-bindings/random/)
+    b = os.urandom(10)
+    # that function returns bytes, though, so we convert to an int
+    i = int.from_bytes(b)
+    #print(b)
+    #print(i)
+    # use that value to seed the random module
+    random.seed(i)
+    # randrange is zero-based, so add 1 before we return (test this with roll(2) to see it in action)
+    #return random.randrange(sides) + 1
+    #die_label.text = f"{random.randrange(sides) + 1}"
+    center = random.randrange(sides) + 1
+    die_label.text = f"{center}"
+    die_label.x = 105 if center < 10 else 90
 
 refresh_die_display()
 
@@ -140,7 +151,7 @@ while True:
         time.sleep(0.2)
     if funhouse.peripherals.button_sel:
         #roll the selected die
-        roll_die()
+        roll(die_sizes[die_idx])
         time.sleep(0.2)
 
 
