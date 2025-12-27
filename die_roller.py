@@ -21,22 +21,6 @@ funhouse = FunHouse(
     scale=1 #filled polygons behave strangely at any scale other than 1 - the fill color acts as if scale=1
 )
 
-#display handling
-""" TODO: something else here
-def show_die(num_sides):
-    if num_sides == 6:
-        show_6()
-    elif num_sides == 8:
-        show_8()
-    elif num_sides == 10:
-        show_10()
-    elif num_sides == 12:
-        show_12()
-    elif num_sides == 20:
-        show_20()
-    else:
-        show_circle()
-"""
 
 def show(shape):
     shape.hidden = False
